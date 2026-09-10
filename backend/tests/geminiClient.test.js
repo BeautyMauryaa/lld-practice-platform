@@ -1,7 +1,10 @@
 // Mock the SDK before requiring geminiClient, since geminiClient imports
 // it at module load time.
 jest.mock('@google/genai', () => {
-  return { GoogleGenAI: jest.fn() };
+  return {
+    GoogleGenAI: jest.fn(),
+    Type: { OBJECT: 'OBJECT', ARRAY: 'ARRAY', STRING: 'STRING' },
+  };
 });
 
 const { GoogleGenAI } = require('@google/genai');
