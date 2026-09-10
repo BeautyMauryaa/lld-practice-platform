@@ -1,39 +1,70 @@
-// Small API layer so components never call fetch() directly.
-// Keeping this thin on purpose — no interceptors, no retry logic,
-// no generic request builder. Just the calls this app actually needs.
+// All backend calls live in this one file. Pages call these functions
+// rather than writing fetch() directly, so the API base URL and error
+// handling live in exactly one place.
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-async function handleResponse(res) {
-  if (!res.ok) {
-    // Try to surface the backend's own error message when it sends one
-    // (the API returns { error: "..." } on failures), otherwise fall
-    // back to a generic message tied to the HTTP status.
-    let message = `Request failed (${res.status})`;
+async function request(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
     try {
-      const body = await res.json();
-      if (body && body.error) {
-        message = body.error;
-      }
+      const body = await response.json();
+      if (body?.error) message = body.error;
     } catch {
-      // Response body wasn't JSON — keep the generic message.
+      // body wasn't JSON — keep the generic message
     }
     throw new Error(message);
   }
-  return res.json();
+
+  if (response.status === 204) return null;
+  return response.json();
 }
 
-// GET /api/problems — lightweight list for the problem picker screen.
-export async function getProblems() {
-  const res = await fetch(`${API_BASE_URL}/api/problems`);
-  return handleResponse(res);
+// ---- Problems ----
+
+export function getProblems() {
+  return request('/problems');
 }
 
-// GET /api/problems/:id — full problem detail.
-// Not used yet in Step 8A (the placeholder page only needs the id/title
-// passed via navigation state), but included now since it's the natural
-// companion call and Step 8B will need it immediately.
-export async function getProblemById(id) {
-  const res = await fetch(`${API_BASE_URL}/api/problems/${id}`);
-  return handleResponse(res);
+export function getProblemById(id) {
+  return request(`/problems/${id}`);
+}
+
+// ---- Learners ----
+// There's no dedicated "who am I" screen yet in the roadmap, so the
+// frontend needs the smallest possible way to get a learnerId to create
+// attempts with. See getOrCreateLearnerId in services/learner.js for how
+// this is used — kept separate from this file since it's identity
+// bootstrapping, not a plain API wrapper.
+
+export function createLearner(name) {
+  return request('/learners', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+}
+
+// ---- Attempts ----
+
+export function createAttempt(learnerId, problemId) {
+  return request('/attempts', {
+    method: 'POST',
+    body: JSON.stringify({ learnerId, problemId }),
+  });
+}
+
+export function saveAttemptDraft(attemptId, submission) {
+  return request(`/attempts/${attemptId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ submission }),
+  });
+}
+
+export function getAttemptById(attemptId) {
+  return request(`/attempts/${attemptId}`);
 }

@@ -1,19 +1,27 @@
+/* Design tokens — a plain-drafting-table feel: cool paper, hairline
+   rules, sharp corners, one serif for headings against a quiet sans
+   body. Difficulty reads as a colored spine on each card, like a tab on
+   a case file, rather than a rounded pill badge. */
+
 :root {
-  --paper: #f3f5f6;
-  --surface: #ffffff;
-  --ink: #17222b;
-  --ink-soft: #4b5a63;
-  --line: #d7dee1;
-  --accent: #1f6f63;
-  --accent-soft: #e4f0ee;
-  --accent-ink: #0f4a41;
+  --color-paper: #eef1f2;
+  --color-surface: #ffffff;
+  --color-ink: #16232c;
+  --color-ink-muted: #52626c;
+  --color-line: #cdd6da;
+  --color-accent: #2f6f5e;
+  --color-accent-ink: #ffffff;
 
-  --easy: #2e7d4f;
-  --medium: #9c6b12;
-  --hard: #b23a2e;
+  --color-easy: #3d7a5d;
+  --color-medium: #9c7a2e;
+  --color-hard: #a3413a;
+  --color-danger: #a3413a;
 
-  --serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --radius: 3px;
 }
 
 * {
@@ -21,237 +29,319 @@
 }
 
 html,
-body,
-#root {
-  height: 100%;
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-accent);
 }
 
 button {
   font-family: inherit;
 }
 
-.page {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 48px 24px 72px;
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
-.page__header {
-  margin-bottom: 40px;
-}
-
-.page__header h1 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 34px;
-  letter-spacing: -0.3px;
-  margin: 0 0 10px;
-  color: var(--ink);
-}
-
-.page__subtitle {
-  margin: 0;
-  max-width: 60ch;
-  color: var(--ink-soft);
-  font-size: 16px;
-}
-
-/* --- States: loading / error / empty --- */
-
-.state {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: 6px;
-  padding: 20px 22px;
-  color: var(--ink-soft);
-}
-
-.state--loading {
-  border-style: dashed;
-}
-
-.state--error {
-  border-color: var(--hard);
-  background: #fbf0ef;
-  color: var(--ink);
-}
-
-.state--error p:first-child {
-  margin: 0 0 6px;
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
   font-weight: 600;
 }
 
-.state__hint {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ink-soft);
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-.state--empty {
-  text-align: left;
+/* ---- Layout ---- */
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
 }
 
-/* --- Problem grid + card --- */
-
-.problem-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+.page__header {
+  margin-bottom: 28px;
 }
+
+.page__subtitle {
+  color: var(--color-ink-muted);
+  margin-top: 6px;
+}
+
+.state-message {
+  color: var(--color-ink-muted);
+}
+
+.state-message--error {
+  color: var(--color-hard);
+}
+
+.state-message--success {
+  color: var(--color-easy);
+}
+
+/* ---- Buttons ---- */
+
+.btn {
+  font-family: inherit;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.btn--primary:hover:not(:disabled) {
+  background: #285e4f;
+}
+
+.btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+}
+.btn--secondary:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn--danger {
+  background: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--color-line);
+}
+.btn--danger:hover:not(:disabled) {
+  border-color: var(--color-danger);
+}
+
+.btn--small {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+.btn--icon {
+  background: transparent;
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-line);
+  width: 32px;
+  padding: 0;
+  line-height: 1;
+}
+.btn--icon:hover:not(:disabled) {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* ---- Problem cards (list page) ---- */
 
 .problem-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
-  border-radius: 4px;
-  padding: 18px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
-.problem-card__header {
+.problem-card + .problem-card {
+  margin-top: 12px;
+}
+
+.problem-card__spine {
+  flex: 0 0 6px;
+  background: var(--color-ink-muted);
+}
+.problem-card.difficulty-easy .problem-card__spine { background: var(--color-easy); }
+.problem-card.difficulty-medium .problem-card__spine { background: var(--color-medium); }
+.problem-card.difficulty-hard .problem-card__spine { background: var(--color-hard); }
+
+.problem-card__body {
+  flex: 1;
+  padding: 18px 20px;
+}
+
+.problem-card__heading {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
 .problem-card__title {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 19px;
+  font-size: 1.25rem;
   margin: 0;
-  color: var(--ink);
 }
 
-.difficulty {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  padding-top: 3px;
-}
-
-.difficulty::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ink-soft);
+.problem-card__difficulty {
   flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+.problem-card.difficulty-easy .problem-card__difficulty { color: var(--color-easy); }
+.problem-card.difficulty-medium .problem-card__difficulty { color: var(--color-medium); }
+.problem-card.difficulty-hard .problem-card__difficulty { color: var(--color-hard); }
+
+.problem-card__excerpt {
+  margin: 8px 0 16px;
+  color: var(--color-ink-muted);
+  max-width: 62ch;
 }
 
-.difficulty--easy::before {
-  background: var(--easy);
+/* ---- Practice page: problem details ---- */
+
+.practice-page {
+  max-width: 820px;
 }
 
-.difficulty--medium::before {
-  background: var(--medium);
-}
-
-.difficulty--hard::before {
-  background: var(--hard);
-}
-
-.problem-card--easy {
-  border-left-color: var(--easy);
-}
-
-.problem-card--medium {
-  border-left-color: var(--medium);
-}
-
-.problem-card--hard {
-  border-left-color: var(--hard);
-}
-
-.problem-card__context {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ink-soft);
-  line-height: 1.45;
-  flex-grow: 1;
-}
-
-.problem-card__action {
-  align-self: flex-start;
-  margin-top: 6px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 9px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.problem-card__action:hover {
-  background: var(--accent-ink);
-}
-
-.problem-card__action:focus-visible {
-  outline: 2px solid var(--accent-ink);
-  outline-offset: 2px;
-}
-
-/* --- Placeholder page --- */
-
-.back-link {
-  display: inline-block;
+.problem-details {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 24px;
   margin-bottom: 28px;
-  color: var(--accent-ink);
-  text-decoration: none;
-  font-size: 14px;
 }
 
-.back-link:hover {
-  text-decoration: underline;
+.problem-details__difficulty {
+  color: var(--color-ink-muted);
 }
 
-.placeholder {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: 6px;
-  padding: 32px;
+.problem-details__block {
+  margin-top: 16px;
 }
 
-.placeholder h1 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 26px;
-  margin: 0 0 12px;
+.problem-details__block h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
 }
 
-.placeholder__title {
-  font-size: 16px;
-  color: var(--ink);
+.problem-details__block ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--color-ink-muted);
+}
+
+/* ---- Design form ---- */
+
+.design-form h2 {
+  margin-bottom: 12px;
+}
+
+.design-form__fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.classes-section {
+  margin-bottom: 24px;
+}
+
+.class-editor {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.class-editor__header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.class-editor__name {
+  flex: 1;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  padding: 6px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+}
+
+.class-editor__field {
+  margin-top: 10px;
+}
+
+.class-editor__field > label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+  margin-bottom: 4px;
+}
+
+.list-field__row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.list-field__row input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  font-family: inherit;
+}
+
+.patterns-section,
+.code-stub-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.patterns-section h3,
+.code-stub-section h3 {
+  font-size: 1rem;
   margin: 0 0 4px;
-  font-weight: 600;
 }
 
-.placeholder__id {
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin: 0 0 16px;
-  font-family: ui-monospace, monospace;
+.hint-text {
+  color: var(--color-ink-muted);
+  font-size: 0.85rem;
+  margin: 0 0 10px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-  }
+.code-stub-input {
+  width: 100%;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  resize: vertical;
 }

@@ -1,75 +1,60 @@
 import { useEffect, useState } from 'react';
-import ProblemCard from '../components/ProblemCard';
+import { useNavigate } from 'react-router-dom';
 import { getProblems } from '../services/api';
+import ProblemCard from '../components/ProblemCard';
 
-export default function ProblemsListPage() {
-  const [problems, setProblems] = useState([]);
+function ProblemsListPage() {
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
-  const [errorMessage, setErrorMessage] = useState('');
+  const [problems, setProblems] = useState([]);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadProblems() {
-      setStatus('loading');
-      try {
-        const data = await getProblems();
-        if (!cancelled) {
-          setProblems(data);
-          setStatus('ready');
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setErrorMessage(err.message || 'Something went wrong while loading problems.');
-          setStatus('error');
-        }
-      }
-    }
-
-    loadProblems();
-
-    return () => {
-      cancelled = true;
-    };
+    getProblems()
+      .then((data) => {
+        setProblems(data);
+        setStatus('ready');
+      })
+      .catch((err) => {
+        setError(err.message);
+        setStatus('error');
+      });
   }, []);
+
+  const handleStart = (problemId) => {
+    navigate(`/problems/${problemId}`);
+  };
 
   return (
     <main className="page">
       <header className="page__header">
-        <h1>Practice LLD Problems</h1>
+        <h1>LLD Practice</h1>
         <p className="page__subtitle">
-          Pick a problem, design a solution, and get structured feedback on your approach.
+          Pick a problem, design it your way, and get feedback on your approach.
         </p>
       </header>
 
-      {status === 'loading' && (
-        <p className="state state--loading" role="status">
-          Loading problems…
-        </p>
-      )}
+      {status === 'loading' && <p className="state-message">Loading problems…</p>}
 
       {status === 'error' && (
-        <div className="state state--error" role="alert">
-          <p>Couldn't load problems: {errorMessage}</p>
-          <p className="state__hint">
-            Check that the backend is running at the expected address, then reload this page.
-          </p>
-        </div>
+        <p className="state-message state-message--error">
+          Couldn't load problems: {error}. Check that the backend is running and try refreshing.
+        </p>
       )}
 
       {status === 'ready' && problems.length === 0 && (
-        <p className="state state--empty">
-          No problems are available yet. Check back soon.
-        </p>
+        <p className="state-message">No problems are available yet.</p>
       )}
 
       {status === 'ready' && problems.length > 0 && (
-        <section className="problem-grid">
+        <div className="problem-list">
           {problems.map((problem) => (
-            <ProblemCard key={problem.id} problem={problem} />
+            <ProblemCard key={problem.id} problem={problem} onStart={handleStart} />
           ))}
-        </section>
+        </div>
       )}
     </main>
   );
 }
+
+export default ProblemsListPage;
