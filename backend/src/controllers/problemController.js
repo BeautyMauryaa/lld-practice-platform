@@ -4,12 +4,13 @@ const Problem = require('../models/Problem');
 // GET /api/problems — lightweight list for the problem picker screen.
 async function listProblems(req, res) {
   try {
-    const problems = await Problem.find({}, 'title difficulty').lean();
+    const problems = await Problem.find({}, 'title difficulty requirements').lean();
 
     const result = problems.map((p) => ({
       id: p._id,
       title: p.title,
       difficulty: p.difficulty,
+      requirements: p.requirements,
     }));
 
     res.json(result);
