@@ -61,6 +61,24 @@ const feedbackItemSchema = new Schema(
   { _id: false }
 );
 
+const requirementCoverageItemSchema = new Schema(
+  {
+    requirement: {
+      type: String,
+      required: [true, 'Requirement text is required'],
+    },
+    covered: {
+      type: Boolean,
+      default: false,
+    },
+    coveredBy: {
+      type: [String],
+      default: [],
+    },
+  },
+  { _id: false }
+);
+
 const aiInsightSchema = new Schema(
   {
     message: {
@@ -79,6 +97,10 @@ const feedbackSchema = new Schema(
     },
     heuristic: {
       type: [feedbackItemSchema],
+      default: [],
+    },
+    requirementCoverage: {
+      type: [requirementCoverageItemSchema],
       default: [],
     },
     aiInsights: {

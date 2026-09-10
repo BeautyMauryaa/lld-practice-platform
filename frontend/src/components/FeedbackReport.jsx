@@ -1,79 +1,113 @@
-// Renders an evaluated attempt's feedback. Shared between PracticePage
-// (right after a fresh evaluation) and AttemptDetailPage (viewing a past
-// evaluated attempt) so the two don't drift into two different feedback
-// layouts. Pass null/undefined feedback to render nothing.
-function FeedbackReport({ feedback }) {
+// frontend/src/components/FeedbackReport.jsx
+import React from "react";
+// import './FeedbackReport.css';
+
+export default function FeedbackReport({ feedback }) {
   if (!feedback) return null;
 
-  const structural = feedback.structural || [];
-  const heuristic = feedback.heuristic || [];
-  const aiInsights = feedback.aiInsights || [];
+  const {
+    // score = 0,
+    summary = "",
+    structural = [],
+    heuristic = [],
+    aiInsights = null,
+    requirementCoverage = [],
+  } = feedback;
 
   return (
-    <section className="feedback-report">
-      <h2>Evaluation Feedback</h2>
+    <div className="feedback-report">
+      <div className="feedback-header">
+        <h2>Evaluation Report</h2>
+        {/* <div className="score-badge">Score: {score}%</div> */}
+      </div>
 
-      {feedback.summary && <p className="feedback-summary">{feedback.summary}</p>}
+      {summary && (
+        <div className="feedback-summary">
+          <h3>Summary</h3>
+          <p>{summary}</p>
+        </div>
+      )}
 
-      <div className="feedback-category">
-        <h3>
-          Structural Checks{' '}
-          <span className="feedback-category__confidence">High confidence · Rule-based</span>
-        </h3>
-        {structural.length === 0 ? (
-          <p className="hint-text">No structural issues found.</p>
-        ) : (
-          <ul className="feedback-list">
-            {structural.map((item, i) => (
-              <li key={i} className={`feedback-item feedback-item--${item.severity}`}>
-                {item.message}
+      {requirementCoverage && requirementCoverage.length > 0 && (
+        <div className="feedback-section requirement-coverage-section">
+          <h3>Requirement Coverage</h3>
+          <ul className="coverage-list">
+            {requirementCoverage.map((item, idx) => (
+              <li key={idx} className={item.covered ? "covered" : "uncovered"}>
+                <span className="coverage-icon">
+                  {item.covered ? "✓" : "⚠"}
+                </span>
+                <div className="coverage-content">
+                  <span className="coverage-req">{item.requirement}</span>
+                  <span className="coverage-meta">
+                    {item.covered && item.coveredBy.length > 0
+                      ? `Covered by / Mentioned in: ${item.coveredBy.join(", ")}`
+                      : "Not explicitly modeled in submitted classes"}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="feedback-category">
-        <h3>
-          Worth Considering{' '}
-          <span className="feedback-category__confidence">Medium confidence · Heuristic</span>
-        </h3>
-        {heuristic.length === 0 ? (
-          <p className="hint-text">Nothing else worth flagging here.</p>
-        ) : (
-          <ul className="feedback-list">
-            {heuristic.map((item, i) => (
-              <li key={i} className={`feedback-item feedback-item--${item.severity}`}>
-                {item.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <div className="feedback-section">
+  <h3>Structural Checks</h3>
 
-      <div className="feedback-category">
-        <h3>
-          AI Insights <span className="feedback-category__confidence">Contextual · Gemini</span>
-        </h3>
-        {!feedback.llmAvailable ? (
-          <p className="state-message">
-            AI feedback is currently unavailable. You still have rule-based and heuristic feedback
-            from this evaluation.
+  {structural.length > 0 ? (
+    <ul>
+      {structural.map((item, idx) => (
+        <li key={idx} className={item.passed ? 'passed' : 'failed'}>
+          <span>{item.passed ? '✅' : '❌'}</span>
+          {item.rule && <strong>{item.rule}</strong>}
+          {item.rule ? ': ' : ''}
+          {item.message}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p>No structural issues found.</p>
+  )}
+</div>
+
+      <div className="feedback-section">
+  <h3>Worth Considering</h3>
+
+  {heuristic.length > 0 ? (
+    <ul>
+      {heuristic.map((item, idx) => (
+        <li key={idx}>
+          {item.message}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p>Nothing else worth flagging.</p>
+  )}
+</div>
+
+      {feedback.llmAvailable === false ? (
+        <div className="feedback-section ai-insights">
+          <h3>AI Insights</h3>
+          <p>
+            AI feedback is currently unavailable. Rule-based feedback is still
+            available.
           </p>
-        ) : aiInsights.length === 0 ? (
-          <p className="hint-text">No AI insights for this submission.</p>
-        ) : (
-          <ul className="feedback-list">
-            {aiInsights.map((item, i) => (
-              <li key={i} className="feedback-item">
-                {item.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
+        </div>
+      ) : (
+        <div className="feedback-section ai-insights">
+          <h3>AI Insights</h3>
+          {Array.isArray(aiInsights) && aiInsights.length > 0 ? (
+            <ul>
+              {aiInsights.map((item, idx) => (
+                <li key={idx}>{item.message}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No AI insights for this submission.</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
-
-export default FeedbackReport;

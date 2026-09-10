@@ -172,6 +172,54 @@ function runHeuristicChecks(submission, problem) {
   return findings;
 }
 
+
+// --- Requirement coverage (lightweight signal, not proof) ---
+// Checks whether each requirement is mentioned by at least one submitted
+// class through its name, responsibilities, or relationships.
+//
+// This is intentionally a heuristic signal. A keyword match does not prove
+// that the requirement is actually satisfied.
+
+function getRequirementCoverage(submission, problem) {
+  const requirements = Array.isArray(problem?.requirements)
+    ? problem.requirements
+    : [];
+
+  const classes = Array.isArray(submission?.classes)
+    ? submission.classes
+    : [];
+
+  return requirements.map((requirement) => {
+    const requirementKeywords = extractKeywords(requirement);
+    const coveredBy = [];
+
+    for (const cls of classes) {
+      const classText = [
+        cls.name || '',
+        ...(Array.isArray(cls.responsibilities) ? cls.responsibilities : []),
+        ...(Array.isArray(cls.relationships) ? cls.relationships : []),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const isMentioned = requirementKeywords.some((keyword) =>
+        classText.includes(keyword)
+      );
+
+      if (isMentioned && cls.name?.trim()) {
+        coveredBy.push(cls.name.trim());
+      }
+    }
+
+    return {
+      requirement,
+      covered: coveredBy.length > 0,
+      coveredBy: [...new Set(coveredBy)],
+    };
+  });
+}
+
+
 // evaluate(submission, problem, context) — context is accepted for
 // conformance with the shared Evaluator contract (see Evaluator.js) but
 // unused here; RuleEvaluator's checks only ever need submission + problem.
@@ -184,4 +232,7 @@ function evaluate(submission, problem, context = {}) {
   };
 }
 
-module.exports = { evaluate };
+module.exports = {
+  evaluate,
+  getRequirementCoverage,
+};

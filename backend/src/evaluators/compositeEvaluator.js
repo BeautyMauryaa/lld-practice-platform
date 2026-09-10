@@ -13,12 +13,12 @@
 // at this layer is a real evaluation failure, not a "partial feedback is
 // still useful" case like an LLM outage is.
 
-const { LLMEvaluatorError } = require('./llmEvaluator');
+const { LLMEvaluatorError } = require("./llmEvaluator");
 
 class CompositeEvaluatorError extends Error {
   constructor(message, cause) {
     super(message);
-    this.name = 'CompositeEvaluatorError';
+    this.name = "CompositeEvaluatorError";
     if (cause) this.cause = cause;
   }
 }
@@ -38,11 +38,17 @@ function createCompositeEvaluator({ ruleEvaluator, llmEvaluator }) {
       // it rather than returning a report with fabricated/empty
       // deterministic findings. LLMEvaluator is intentionally never
       // called in this path.
-      throw new CompositeEvaluatorError('Deterministic evaluation failed.', err);
+      throw new CompositeEvaluatorError(
+        "Deterministic evaluation failed.",
+        err,
+      );
     }
 
     const structural = ruleResult.structural || [];
     const heuristic = ruleResult.heuristic || [];
+    const requirementCoverage = ruleEvaluator.getRequirementCoverage
+      ? ruleEvaluator.getRequirementCoverage(submission, problem)
+      : [];
 
     try {
       const llmResult = await llmEvaluator.evaluate(submission, problem, {
@@ -53,6 +59,7 @@ function createCompositeEvaluator({ ruleEvaluator, llmEvaluator }) {
       return {
         structural,
         heuristic,
+        requirementCoverage,
         aiInsights: llmResult.aiInsights,
         llmAvailable: true,
         summary: llmResult.summary,
@@ -67,19 +74,25 @@ function createCompositeEvaluator({ ruleEvaluator, llmEvaluator }) {
         // own error handling, which never includes the key value itself,
         // only whether it was set).
         console.error(
-          'LLMEvaluator failed; falling back to rule-based feedback only.',
-          'Reason:', err.message,
-          err.cause ? `| Cause: ${err.cause.message}` : ''
+          "LLMEvaluator failed; falling back to rule-based feedback only.",
+          "Reason:",
+          err.message,
+          err.cause ? `| Cause: ${err.cause.message}` : "",
         );
         return {
           structural,
           heuristic,
+          requirementCoverage,
           aiInsights: [],
           llmAvailable: false,
-          summary: 'Evaluation completed with rule-based feedback. AI feedback was temporarily unavailable.',
+          summary:
+            "Evaluation completed with rule-based feedback. AI feedback was temporarily unavailable.",
         };
       }
-      throw new CompositeEvaluatorError('LLM evaluation failed unexpectedly.', err);
+      throw new CompositeEvaluatorError(
+        "LLM evaluation failed unexpectedly.",
+        err,
+      );
     }
   }
 
