@@ -110,6 +110,64 @@ describe('RuleEvaluator - structural checks', () => {
 
     expect(result.structural.some((f) => /does not match any class/i.test(f.message))).toBe(true);
   });
+
+  test('does NOT flag sentence-initial relationship verbs as undeclared classes (regression)', () => {
+    const submission = {
+      classes: [
+        {
+          name: 'ParkingLot',
+          responsibilities: ['manage floors'],
+          relationships: ['Contains ParkingFloor'],
+        },
+        {
+          name: 'ParkingFloor',
+          responsibilities: ['manage spots'],
+          relationships: ['Contains ParkingSpot'],
+        },
+        {
+          name: 'ParkingSpot',
+          responsibilities: ['track occupancy'],
+          relationships: ['Assigned to Vehicle', 'Parked in ParkingSpot'],
+        },
+        {
+          name: 'Vehicle',
+          responsibilities: ['identify itself'],
+          relationships: [],
+        },
+      ],
+      patternsUsed: [],
+      codeStub: '',
+    };
+
+    const result = evaluate(submission, parkingLotProblem);
+
+    // None of "Contains", "Assigned", "Parked" should ever be reported as
+    // undeclared classes — they're relationship verbs, not class names.
+    const undeclaredMessages = result.structural.filter((f) => /does not match any class/i.test(f.message));
+    expect(undeclaredMessages).toEqual([]);
+  });
+
+  test('still detects a genuinely undeclared class later in the same kind of sentence (regression counterpart)', () => {
+    const submission = {
+      classes: [
+        {
+          name: 'ParkingSpot',
+          responsibilities: ['track occupancy'],
+          // Same sentence shape as the false-positive cases above
+          // ("Verb ... ClassName"), but "Elevator" is genuinely undeclared.
+          relationships: ['Parked in Elevator'],
+        },
+      ],
+      patternsUsed: [],
+      codeStub: '',
+    };
+
+    const result = evaluate(submission, parkingLotProblem);
+
+    expect(
+      result.structural.some((f) => /mentions "Elevator"/.test(f.message) && /does not match any class/i.test(f.message))
+    ).toBe(true);
+  });
 });
 
 describe('RuleEvaluator - heuristic checks', () => {

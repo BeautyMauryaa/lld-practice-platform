@@ -124,7 +124,7 @@ describe('LLMEvaluator - API failures', () => {
   });
 
   test('a timeout error (GeminiTimeoutError) is wrapped in a controlled LLMEvaluatorError mentioning timeout', async () => {
-    const timeoutErr = new Error('Gemini request timed out after 15000ms.');
+    const timeoutErr = new Error('Gemini request timed out after 30000ms.');
     timeoutErr.name = 'GeminiTimeoutError';
     const fakeCallLLM = jest.fn().mockRejectedValue(timeoutErr);
 

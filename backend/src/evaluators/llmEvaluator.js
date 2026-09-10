@@ -93,17 +93,8 @@ IMPORTANT RULES — follow all of these:
 6. Avoid generic praise ("great job!", "nice work!") with no substance behind it.
 7. Focus on this specific submission and problem, not LLD best practices in the abstract.
 
-RESPONSE FORMAT
-Respond with ONLY valid JSON, no markdown code fences, no commentary before or after. The JSON must exactly match this shape:
-
-{
-  "aiInsights": [
-    { "message": "string" }
-  ],
-  "summary": "string"
-}
-
-Provide 2-5 items in aiInsights. Each message should be a self-contained, specific observation or suggestion. "summary" should be one or two sentences capturing the overall picture.`;
+RESPONSE
+Provide 2-5 items in aiInsights, each a self-contained, specific observation or suggestion. Keep summary to one or two sentences capturing the overall picture.`;
 }
 
 function stripCodeFences(text) {

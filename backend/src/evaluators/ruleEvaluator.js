@@ -107,8 +107,29 @@ function runStructuralChecks(submission) {
     const relationships = Array.isArray(cls.relationships) ? cls.relationships : [];
     for (const rel of relationships) {
       if (typeof rel !== 'string') continue;
-      const mentionedWords = rel.match(/\b[A-Z][a-zA-Z]*\b/g) || [];
-      for (const word of mentionedWords) {
+      const trimmedRel = rel.trim();
+      const wordMatches = [...trimmedRel.matchAll(/\b[A-Z][a-zA-Z]*\b/g)];
+
+      for (const match of wordMatches) {
+        const word = match[0];
+        const isFirstWordOfSentence = match.index === 0;
+        // A compound, Pascal-case shape (e.g. "ParkingSpot") — two or more
+        // capitalized segments run together — is a much stronger signal
+        // of an intentional class name than mere capitalization, since
+        // ordinary English words/verbs are essentially never written that
+        // way. Plain capitalization alone is ambiguous at the start of a
+        // sentence (every sentence starts capitalized regardless of
+        // whether that word is a class name), so a single-segment
+        // capitalized word there ("Contains", "Assigned", "Parked") is
+        // treated as ordinary sentence-initial capitalization, not a
+        // class reference. The same word later in the sentence, or a
+        // compound name anywhere, is still checked normally.
+        const isCompoundClassLike = /^[A-Z][a-z0-9]*(?:[A-Z][a-z0-9]*)+$/.test(word);
+
+        if (isFirstWordOfSentence && !isCompoundClassLike) {
+          continue;
+        }
+
         const wordKey = word.toLowerCase();
         if (wordKey === (cls.name || '').toLowerCase()) continue; // referencing itself
         if (!declaredNames.has(wordKey)) {

@@ -2,6 +2,7 @@ const Attempt = require('../models/Attempt');
 const Learner = require('../models/Learner');
 const Problem = require('../models/Problem');
 const { isValidObjectId, validateSubmissionShape } = require('../validation/attemptValidation');
+const attemptService = require('../services/attemptService');
 
 // Shapes an Attempt document into the full response format used by
 // GET /api/attempts/:id (and reused by createAttempt/saveDraft responses).
@@ -179,4 +180,37 @@ async function listAttemptsByLearner(req, res) {
   }
 }
 
-module.exports = { createAttempt, saveDraft, getAttempt, listAttemptsByLearner };
+// POST /api/attempts/:id/submit
+async function submitAttempt(req, res) {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ error: 'Invalid attempt ID.' });
+  }
+
+  try {
+    const attempt = await attemptService.submitAttempt(id);
+    res.json(toFullAttemptResponse(attempt));
+  } catch (err) {
+    if (err instanceof attemptService.AttemptNotFoundError) {
+      return res.status(404).json({ error: err.message });
+    }
+    if (err instanceof attemptService.InvalidSubmissionError) {
+      return res.status(400).json({ error: err.message });
+    }
+    if (err instanceof attemptService.AttemptStatusConflictError) {
+      return res.status(409).json({ error: err.message });
+    }
+    if (err instanceof attemptService.EvaluationPipelineError) {
+      // Log the real cause server-side; never expose provider errors,
+      // API keys, or internal details to the learner.
+      console.error('Evaluation pipeline failed:', err.message, err.cause ? err.cause.message : '');
+      return res.status(500).json({ error: 'Evaluation failed. Please try again.' });
+    }
+
+    console.error('Unexpected error during submit:', err.message);
+    res.status(500).json({ error: 'Failed to submit attempt.' });
+  }
+}
+
+module.exports = { createAttempt, saveDraft, getAttempt, listAttemptsByLearner, submitAttempt };
