@@ -1,23 +1,32 @@
 // backend/tests/requirementCoverage.test.js
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const Attempt = require('../src/models/Attempt');
-const Problem = require('../src/models/Problem');
-const CompositeEvaluator = require('../src/evaluators/compositeEvaluator');
-const RuleEvaluator = require('../src/evaluators/ruleEvaluator');
-const LLMEvaluator = require('../src/evaluators/llmEvaluator');
+
+const mongoose = require("mongoose");
+const { MongoMemoryServer } = require("mongodb-memory-server");
+
+const Attempt = require("../src/models/Attempt");
+const Problem = require("../src/models/Problem");
+const RuleEvaluator = require("../src/evaluators/ruleEvaluator");
+const {
+  createCompositeEvaluator,
+} = require("../src/evaluators/compositeEvaluator");
+const { LLMEvaluatorError } = require("../src/evaluators/llmEvaluator");
 
 let mongoServer;
+
+jest.setTimeout(60000);
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
-}, 60000); // <-- Increase timeout here for this hook
+});
 
 afterAll(async () => {
   await mongoose.disconnect();
-  await mongoServer.stop();
+
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
 
 afterEach(async () => {
@@ -26,238 +35,353 @@ afterEach(async () => {
   jest.restoreAllMocks();
 });
 
-describe('Requirement Coverage Suite', () => {
-  it('should correctly evaluate covered and uncovered requirements', async () => {
+describe("Requirement Coverage Suite", () => {
+  it("should correctly evaluate covered and uncovered requirements", () => {
     const problem = {
       requirements: [
-        'Support compact and large handicapped vehicles',
-        'Unrelated missing requirement'
+        "Support compact and large handicapped vehicles",
+        "Unrelated missing requirement",
       ],
-      expectedClasses: ['ParkingSpot']
     };
 
     const submission = {
       classes: [
         {
-          name: 'ParkingSpot',
-          responsibilities: ['Supports compact and large handicapped spots'],
-          relationships: []
-        }
-      ]
+          name: "ParkingSpot",
+          responsibilities: ["Supports compact and large handicapped spots"],
+          relationships: [],
+        },
+      ],
     };
 
-    const evaluator = new RuleEvaluator();
-    const result = evaluator.evaluate(problem, submission);
+    const result = RuleEvaluator.evaluate(submission, problem);
+    const requirementCoverage = RuleEvaluator.getRequirementCoverage(
+      submission,
+      problem,
+    );
 
-    expect(result.requirementCoverage).toHaveLength(2);
-    expect(result.requirementCoverage[0].covered).toBe(true);
-    expect(result.requirementCoverage[0].coveredBy).toContain('ParkingSpot');
-    expect(result.requirementCoverage[1].covered).toBe(false);
-    expect(result.requirementCoverage[1].coveredBy).toEqual([]);
+    expect(result).toHaveProperty("structural");
+    expect(result).toHaveProperty("heuristic");
+
+    expect(requirementCoverage).toHaveLength(2);
+
+    expect(requirementCoverage[0].covered).toBe(true);
+    expect(requirementCoverage[0].coveredBy).toContain("ParkingSpot");
+
+    expect(requirementCoverage[1].covered).toBe(false);
+    expect(requirementCoverage[1].coveredBy).toEqual([]);
   });
 
-  it('should collect multiple classes covering one requirement and handle distinct mappings', async () => {
+  it("should collect multiple classes covering one requirement", () => {
     const problem = {
-      requirements: ['Support compact and large vehicles'],
-      expectedClasses: []
+      requirements: ["Support compact and large vehicles"],
     };
 
     const submission = {
       classes: [
-        { name: 'ParkingSpot', responsibilities: ['Supports compact sizes'], relationships: [] },
-        { name: 'ParkingLot', responsibilities: ['Supports large sizes'], relationships: [] }
-      ]
+        {
+          name: "ParkingSpot",
+          responsibilities: ["Supports compact sizes"],
+          relationships: [],
+        },
+        {
+          name: "ParkingLot",
+          responsibilities: ["Supports large sizes"],
+          relationships: [],
+        },
+      ],
     };
 
-    const evaluator = new RuleEvaluator();
-    const result = evaluator.evaluate(problem, submission);
+    const requirementCoverage = RuleEvaluator.getRequirementCoverage(
+      submission,
+      problem,
+    );
 
-    expect(result.requirementCoverage[0].covered).toBe(true);
-    expect(result.requirementCoverage[0].coveredBy).toEqual(expect.arrayContaining(['ParkingSpot', 'ParkingLot']));
+    expect(requirementCoverage[0].covered).toBe(true);
+    expect(requirementCoverage[0].coveredBy).toEqual(
+      expect.arrayContaining(["ParkingSpot", "ParkingLot"]),
+    );
   });
 
-  it('should handle empty or missing requirements gracefully', async () => {
-    const problem = { requirements: [], expectedClasses: [] };
-    const submission = { classes: [{ name: 'TestClass' }] };
+  it("should handle empty or missing requirements gracefully", () => {
+    const problem = {
+      requirements: [],
+    };
 
-    const evaluator = new RuleEvaluator();
-    const result = evaluator.evaluate(problem, submission);
+    const submission = {
+      classes: [{ name: "TestClass" }],
+    };
 
-    expect(result.requirementCoverage).toEqual([]);
+    const requirementCoverage = RuleEvaluator.getRequirementCoverage(
+      submission,
+      problem,
+    );
+
+    expect(requirementCoverage).toEqual([]);
   });
 
-  it('should run CompositeEvaluator successfully including requirement coverage', async () => {
-    const problem = await Problem.create({
-      title: 'Parking Lot',
-      description: 'Design a parking lot',
-      difficulty: 'Medium',
-      expectedClasses: ['ParkingSpot'],
-      requirements: ['Support compact sizes']
+  it("should include requirement coverage in CompositeEvaluator result", async () => {
+    const problem = {
+      requirements: ["Support compact sizes"],
+    };
+
+    const submission = {
+      classes: [
+        {
+          name: "ParkingSpot",
+          responsibilities: ["Supports compact sizes"],
+          relationships: [],
+        },
+      ],
+      patternsUsed: [],
+    };
+
+    const ruleEvaluator = {
+      evaluate: jest.fn().mockReturnValue({
+        structural: [],
+        heuristic: [],
+      }),
+
+      getRequirementCoverage: jest.fn().mockReturnValue([
+        {
+          requirement: "Support compact sizes",
+          covered: true,
+          coveredBy: ["ParkingSpot"],
+        },
+      ]),
+    };
+
+    const llmEvaluator = {
+      evaluate: jest.fn().mockResolvedValue({
+        aiInsights: [],
+        summary: "Good design.",
+      }),
+    };
+
+    const composite = createCompositeEvaluator({
+      ruleEvaluator,
+      llmEvaluator,
     });
 
-    const submission = {
-      classes: [
-        { name: 'ParkingSpot', responsibilities: ['Supports compact sizes'], relationships: [] }
-      ],
-      patternsUsed: []
-    };
+    const evaluation = await composite.evaluate(submission, problem);
 
-    const composite = new CompositeEvaluator();
-    const evaluation = await composite.evaluate(problem, submission);
-
-    expect(evaluation.score).toBe(100);
     expect(evaluation.requirementCoverage).toHaveLength(1);
     expect(evaluation.requirementCoverage[0].covered).toBe(true);
-    expect(evaluation.requirementCoverage[0].coveredBy).toContain('ParkingSpot');
+    expect(evaluation.requirementCoverage[0].coveredBy).toContain(
+      "ParkingSpot",
+    );
   });
 
-  it('should handle LLMEvaluator failure gracefully and preserve requirement coverage with llmAvailable set to false', async () => {
-    const problem = await Problem.create({
-      title: 'Parking Lot',
-      description: 'Design a parking lot',
-      difficulty: 'Medium',
-      expectedClasses: ['ParkingSpot'],
-      requirements: ['Support compact sizes']
-    });
+  it("should preserve requirement coverage when LLM evaluation fails", async () => {
+    const problem = {
+      requirements: ["Support compact sizes"],
+    };
 
     const submission = {
       classes: [
-        { name: 'ParkingSpot', responsibilities: ['Supports compact sizes'], relationships: [] }
-      ]
+        {
+          name: "ParkingSpot",
+          responsibilities: ["Supports compact sizes"],
+          relationships: [],
+        },
+      ],
     };
 
-    // Force LLMEvaluator evaluate method to throw an error
-    jest.spyOn(LLMEvaluator.prototype, 'evaluate').mockRejectedValue(new Error('LLM Service Unavailable'));
+    const requirementCoverage = [
+      {
+        requirement: "Support compact sizes",
+        covered: true,
+        coveredBy: ["ParkingSpot"],
+      },
+    ];
 
-    const composite = new CompositeEvaluator();
-    const evaluation = await composite.evaluate(problem, submission);
+    const ruleEvaluator = {
+      evaluate: jest.fn().mockReturnValue({
+        structural: [],
+        heuristic: [],
+      }),
+
+      getRequirementCoverage: jest.fn().mockReturnValue(requirementCoverage),
+    };
+
+    const llmEvaluator = {
+      evaluate: jest
+        .fn()
+        .mockRejectedValue(new LLMEvaluatorError("LLM evaluation timed out.")),
+    };
+
+    const composite = createCompositeEvaluator({
+      ruleEvaluator,
+      llmEvaluator,
+    });
+
+    const evaluation = await composite.evaluate(submission, problem);
 
     expect(evaluation).toBeDefined();
     expect(evaluation.llmAvailable).toBe(false);
-    expect(evaluation.requirementCoverage).toHaveLength(1);
-    expect(evaluation.requirementCoverage[0].covered).toBe(true);
-    expect(evaluation.requirementCoverage[0].coveredBy).toContain('ParkingSpot');
+    expect(evaluation.aiInsights).toEqual([]);
+    expect(evaluation.requirementCoverage).toEqual(requirementCoverage);
   });
 
-  it('should prevent false positives when submission only contains generic overlapping words without specific terms', async () => {
+  it("should identify requirements that have no matching submission terms", () => {
     const problem = {
       requirements: [
-        'Calculate parking fees based on vehicle type and duration'
+        "Calculate parking fees based on vehicle type and duration",
       ],
-      expectedClasses: []
     };
 
     const submission = {
       classes: [
         {
-          name: 'ParkingManager',
-          responsibilities: ['Manage vehicles in the parking system'],
-          relationships: []
-        }
-      ]
+          name: "ParkingSpot",
+          responsibilities: ["Store the parking spot number"],
+          relationships: [],
+        },
+      ],
     };
 
-    const evaluator = new RuleEvaluator();
-    const result = evaluator.evaluate(problem, submission);
+    const requirementCoverage = RuleEvaluator.getRequirementCoverage(
+      submission,
+      problem,
+    );
 
-    expect(result.requirementCoverage).toHaveLength(1);
-    expect(result.requirementCoverage[0].covered).toBe(false);
-    expect(result.requirementCoverage[0].coveredBy).toEqual([]);
+    expect(requirementCoverage).toHaveLength(1);
+    expect(requirementCoverage[0].covered).toBe(false);
+    expect(requirementCoverage[0].coveredBy).toEqual([]);
   });
 
-  it('should collect ALL relevant matching classes without stopping at the first match', async () => {
+  it("should collect ALL relevant matching classes", () => {
     const problem = {
-      requirements: [
-        'Handle entry and exit gates'
-      ],
-      expectedClasses: []
+      requirements: ["Handle entry and exit gates"],
     };
 
     const submission = {
       classes: [
-        { name: 'EntranceGate', responsibilities: ['Handle entry gate operations'], relationships: [] },
-        { name: 'ExitGate', responsibilities: ['Handle exit gate operations'], relationships: [] },
-        { name: 'UnrelatedClass', responsibilities: ['Nothing related'], relationships: [] }
-      ]
+        {
+          name: "EntranceGate",
+          responsibilities: ["Handle entry gate operations"],
+          relationships: [],
+        },
+        {
+          name: "ExitGate",
+          responsibilities: ["Handle exit gate operations"],
+          relationships: [],
+        },
+        {
+          name: "UnrelatedClass",
+          responsibilities: ["Nothing related"],
+          relationships: [],
+        },
+      ],
     };
 
-    const evaluator = new RuleEvaluator();
-    const result = evaluator.evaluate(problem, submission);
+    const requirementCoverage = RuleEvaluator.getRequirementCoverage(
+      submission,
+      problem,
+    );
 
-    expect(result.requirementCoverage[0].covered).toBe(true);
-    expect(result.requirementCoverage[0].coveredBy).toEqual(expect.arrayContaining(['EntranceGate', 'ExitGate']));
-    expect(result.requirementCoverage[0].coveredBy).not.toContain('UnrelatedClass');
-    expect(result.requirementCoverage[0].coveredBy).toHaveLength(2);
+    expect(requirementCoverage[0].covered).toBe(true);
+
+    expect(requirementCoverage[0].coveredBy).toEqual(
+      expect.arrayContaining(["EntranceGate", "ExitGate"]),
+    );
+
+    expect(requirementCoverage[0].coveredBy).not.toContain("UnrelatedClass");
+
+    expect(requirementCoverage[0].coveredBy).toHaveLength(2);
   });
 
-  it('should successfully save, persist, and retrieve attempt including requirementCoverage in Mongoose', async () => {
+  it("should persist requirementCoverage in an Attempt", async () => {
     const problem = await Problem.create({
-      title: 'Parking Lot',
-      description: 'Design a parking lot',
-      difficulty: 'Medium',
-      expectedClasses: ['ParkingSpot'],
-      requirements: ['Support compact sizes']
+      title: "Parking Lot",
+      description: "Design a parking lot",
+      difficulty: "Medium",
+      expectedClasses: ["ParkingSpot"],
+      requirements: ["Support compact sizes"],
     });
 
     const attemptData = {
       problemId: problem._id,
-      learnerName: 'Beauty',
-      status: 'EVALUATED',
+      learnerId: new mongoose.Types.ObjectId(),
+      status: "evaluated",
+
       submission: {
         classes: [
-          { name: 'ParkingSpot', responsibilities: ['Supports compact sizes'], relationships: [] }
-        ]
+          {
+            name: "ParkingSpot",
+            responsibilities: ["Supports compact sizes"],
+            relationships: [],
+          },
+        ],
       },
+
       feedback: {
-        score: 100,
-        summary: 'Great design',
+        summary: "Good design",
         structural: [],
         heuristic: [],
-        aiInsights: null,
+        aiInsights: [],
         llmAvailable: true,
+
         requirementCoverage: [
           {
-            requirement: 'Support compact sizes',
+            requirement: "Support compact sizes",
             covered: true,
-            coveredBy: ['ParkingSpot']
-          }
-        ]
-      }
+            coveredBy: ["ParkingSpot"],
+          },
+        ],
+      },
     };
 
     const created = await Attempt.create(attemptData);
     const fetched = await Attempt.findById(created._id);
 
     expect(fetched).toBeDefined();
+
     expect(fetched.feedback.requirementCoverage).toHaveLength(1);
-    expect(fetched.feedback.requirementCoverage[0].requirement).toBe('Support compact sizes');
+
+    expect(fetched.feedback.requirementCoverage[0].requirement).toBe(
+      "Support compact sizes",
+    );
+
     expect(fetched.feedback.requirementCoverage[0].covered).toBe(true);
-    expect(fetched.feedback.requirementCoverage[0].coveredBy).toContain('ParkingSpot');
+
+    expect(fetched.feedback.requirementCoverage[0].coveredBy).toContain(
+      "ParkingSpot",
+    );
   });
 
-  it('should preserve backward compatibility when requirementCoverage is absent in old attempts', async () => {
+  it("should preserve backward compatibility when requirementCoverage is absent", async () => {
     const problem = await Problem.create({
-      title: 'Legacy Problem',
-      description: 'Legacy description',
-      difficulty: 'Easy',
-      expectedClasses: ['ClassA']
+      title: "Legacy Problem",
+      description: "Legacy description",
+      difficulty: "Easy",
+      expectedClasses: ["ClassA"],
     });
 
     const legacyAttempt = await Attempt.create({
       problemId: problem._id,
-      learnerName: 'Beauty',
-      submission: { classes: [{ name: 'ClassA' }] },
+      learnerId: new mongoose.Types.ObjectId(),
+      status: "evaluated",
+
+      submission: {
+        classes: [
+          {
+            name: "ClassA",
+          },
+        ],
+      },
+
       feedback: {
-        score: 100,
-        summary: 'Legacy summary',
+        summary: "Legacy summary",
         structural: [],
         heuristic: [],
-        aiInsights: null,
-        llmAvailable: true
-      }
+        aiInsights: [],
+        llmAvailable: true,
+      },
     });
 
     const fetched = await Attempt.findById(legacyAttempt._id);
+
     expect(fetched.feedback.requirementCoverage).toEqual([]);
   });
 });

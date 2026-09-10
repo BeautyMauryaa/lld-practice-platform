@@ -20,15 +20,46 @@ const MAX_REASONABLE_RESPONSIBILITIES = 5;
 // "keywords worth checking for" in the submission. Deliberately minimal —
 // this is a heuristic, not an NLP pipeline.
 const STOPWORDS = new Set([
-  'a', 'an', 'the', 'of', 'for', 'to', 'in', 'on', 'with', 'some', 'form',
-  'may', 'be', 'relevant', 'and', 'or', 'that', 'this', 'is', 'are', 'as',
-  'by', 'into', 'not', 'you', 'your', 'which', 'clearly', 'approach', 'or',
-  'across', 'between', 'or', 'used',
+  "a",
+  "an",
+  "the",
+  "of",
+  "for",
+  "to",
+  "in",
+  "on",
+  "with",
+  "some",
+  "form",
+  "may",
+  "be",
+  "relevant",
+  "and",
+  "or",
+  "that",
+  "this",
+  "is",
+  "are",
+  "as",
+  "by",
+  "into",
+  "not",
+  "you",
+  "your",
+  "which",
+  "clearly",
+  "approach",
+  "or",
+  "across",
+  "between",
+  "or",
+  "used",
 ]);
 
 function extractKeywords(text) {
-  return (text.toLowerCase().match(/[a-z]+/g) || [])
-    .filter((word) => word.length >= 4 && !STOPWORDS.has(word));
+  return (text.toLowerCase().match(/[a-z]+/g) || []).filter(
+    (word) => word.length >= 4 && !STOPWORDS.has(word),
+  );
 }
 
 function buildSubmissionText(submission) {
@@ -37,14 +68,16 @@ function buildSubmissionText(submission) {
 
   for (const cls of classes) {
     if (cls.name) parts.push(cls.name);
-    if (Array.isArray(cls.responsibilities)) parts.push(...cls.responsibilities);
+    if (Array.isArray(cls.responsibilities))
+      parts.push(...cls.responsibilities);
     if (Array.isArray(cls.relationships)) parts.push(...cls.relationships);
   }
 
-  if (Array.isArray(submission.patternsUsed)) parts.push(...submission.patternsUsed);
+  if (Array.isArray(submission.patternsUsed))
+    parts.push(...submission.patternsUsed);
   if (submission.codeStub) parts.push(submission.codeStub);
 
-  return parts.join(' ').toLowerCase();
+  return parts.join(" ").toLowerCase();
 }
 
 // --- Structural checks (high confidence, objective, based only on the
@@ -56,12 +89,13 @@ function runStructuralChecks(submission) {
   const seenNames = new Map(); // lowercase name -> count
 
   for (const cls of classes) {
-    const name = typeof cls.name === 'string' ? cls.name.trim() : '';
+    const name = typeof cls.name === "string" ? cls.name.trim() : "";
 
     if (!name) {
       findings.push({
-        message: 'A class is missing a name. Every class should have a clear, identifiable name.',
-        severity: 'warning',
+        message:
+          "A class is missing a name. Every class should have a clear, identifiable name.",
+        severity: "warning",
       });
       continue;
     }
@@ -69,17 +103,19 @@ function runStructuralChecks(submission) {
     const key = name.toLowerCase();
     seenNames.set(key, (seenNames.get(key) || 0) + 1);
 
-    const responsibilities = Array.isArray(cls.responsibilities) ? cls.responsibilities : [];
+    const responsibilities = Array.isArray(cls.responsibilities)
+      ? cls.responsibilities
+      : [];
 
     if (responsibilities.length === 0) {
       findings.push({
         message: `Class "${name}" has no listed responsibilities. Consider clarifying what it is responsible for.`,
-        severity: 'info',
+        severity: "info",
       });
     } else if (responsibilities.length > MAX_REASONABLE_RESPONSIBILITIES) {
       findings.push({
         message: `Class "${name}" has many responsibilities (${responsibilities.length}). Consider whether some responsibilities could be separated into another class.`,
-        severity: 'warning',
+        severity: "warning",
       });
     }
   }
@@ -88,7 +124,7 @@ function runStructuralChecks(submission) {
     if (count > 1) {
       findings.push({
         message: `The class name "${name}" is used ${count} times. Consider renaming to avoid ambiguity between classes.`,
-        severity: 'warning',
+        severity: "warning",
       });
     }
   }
@@ -99,14 +135,18 @@ function runStructuralChecks(submission) {
   // everything reliably from free text, so it's a light, conservative check).
   const declaredNames = new Set(
     classes
-      .map((c) => (typeof c.name === 'string' ? c.name.trim().toLowerCase() : ''))
-      .filter(Boolean)
+      .map((c) =>
+        typeof c.name === "string" ? c.name.trim().toLowerCase() : "",
+      )
+      .filter(Boolean),
   );
 
   for (const cls of classes) {
-    const relationships = Array.isArray(cls.relationships) ? cls.relationships : [];
+    const relationships = Array.isArray(cls.relationships)
+      ? cls.relationships
+      : [];
     for (const rel of relationships) {
-      if (typeof rel !== 'string') continue;
+      if (typeof rel !== "string") continue;
       const trimmedRel = rel.trim();
       const wordMatches = [...trimmedRel.matchAll(/\b[A-Z][a-zA-Z]*\b/g)];
 
@@ -124,18 +164,20 @@ function runStructuralChecks(submission) {
         // treated as ordinary sentence-initial capitalization, not a
         // class reference. The same word later in the sentence, or a
         // compound name anywhere, is still checked normally.
-        const isCompoundClassLike = /^[A-Z][a-z0-9]*(?:[A-Z][a-z0-9]*)+$/.test(word);
+        const isCompoundClassLike = /^[A-Z][a-z0-9]*(?:[A-Z][a-z0-9]*)+$/.test(
+          word,
+        );
 
         if (isFirstWordOfSentence && !isCompoundClassLike) {
           continue;
         }
 
         const wordKey = word.toLowerCase();
-        if (wordKey === (cls.name || '').toLowerCase()) continue; // referencing itself
+        if (wordKey === (cls.name || "").toLowerCase()) continue; // referencing itself
         if (!declaredNames.has(wordKey)) {
           findings.push({
             message: `The relationship "${rel}" on class "${cls.name}" mentions "${word}", which does not match any class defined in this submission. Verify it's intentional (e.g. a built-in type) or add the missing class.`,
-            severity: 'info',
+            severity: "info",
           });
         }
       }
@@ -150,28 +192,31 @@ function runStructuralChecks(submission) {
 
 function runHeuristicChecks(submission, problem) {
   const findings = [];
-  const expectedConcepts = Array.isArray(problem?.expectedConcepts) ? problem.expectedConcepts : [];
+  const expectedConcepts = Array.isArray(problem?.expectedConcepts)
+    ? problem.expectedConcepts
+    : [];
   const submissionText = buildSubmissionText(submission);
 
   for (const concept of expectedConcepts) {
-    if (typeof concept !== 'string' || !concept.trim()) continue;
+    if (typeof concept !== "string" || !concept.trim()) continue;
 
     const keywords = extractKeywords(concept);
     if (keywords.length === 0) continue; // nothing meaningful to check against
 
-    const isAddressed = keywords.some((keyword) => submissionText.includes(keyword));
+    const isAddressed = keywords.some((keyword) =>
+      submissionText.includes(keyword),
+    );
 
     if (!isAddressed) {
       findings.push({
         message: `The problem suggests this may be relevant: "${concept}". Your submission doesn't clearly address this — you may want to consider whether and how it applies to your design.`,
-        severity: 'info',
+        severity: "info",
       });
     }
   }
 
   return findings;
 }
-
 
 // --- Requirement coverage (lightweight signal, not proof) ---
 // Checks whether each requirement is mentioned by at least one submitted
@@ -185,46 +230,60 @@ function getRequirementCoverage(submission, problem) {
     ? problem.requirements
     : [];
 
-  const classes = Array.isArray(submission?.classes)
-    ? submission.classes
-    : [];
+  const classes = Array.isArray(submission?.classes) ? submission.classes : [];
 
   return requirements.map((requirement) => {
     const requirementKeywords = extractKeywords(requirement);
+
+    const meaningfulKeywords = requirementKeywords.filter(
+      (keyword) => keyword.length >= 5,
+    );
+
     const coveredBy = [];
+    const matchedKeywords = new Set();
 
     for (const cls of classes) {
       const classText = [
-        cls.name || '',
+        cls.name || "",
         ...(Array.isArray(cls.responsibilities) ? cls.responsibilities : []),
         ...(Array.isArray(cls.relationships) ? cls.relationships : []),
       ]
-        .join(' ')
+        .join(" ")
         .toLowerCase();
 
-      const isMentioned = requirementKeywords.some((keyword) =>
-        classText.includes(keyword)
-      );
+      for (const keyword of meaningfulKeywords) {
+        const isMatch = new RegExp(`\\b${keyword}\\b`).test(classText);
 
-      if (isMentioned && cls.name?.trim()) {
-        coveredBy.push(cls.name.trim());
+        if (isMatch) {
+          matchedKeywords.add(keyword);
+
+          if (cls.name?.trim()) {
+            coveredBy.push(cls.name.trim());
+          }
+        }
       }
     }
 
+    const isMentioned =
+      meaningfulKeywords.length > 0 && matchedKeywords.size >= 2;
+
     return {
       requirement,
-      covered: coveredBy.length > 0,
-      coveredBy: [...new Set(coveredBy)],
+      covered: isMentioned,
+      coveredBy: isMentioned ? [...new Set(coveredBy)] : [],
     };
   });
 }
-
 
 // evaluate(submission, problem, context) — context is accepted for
 // conformance with the shared Evaluator contract (see Evaluator.js) but
 // unused here; RuleEvaluator's checks only ever need submission + problem.
 function evaluate(submission, problem, context = {}) {
-  const safeSubmission = submission || { classes: [], patternsUsed: [], codeStub: '' };
+  const safeSubmission = submission || {
+    classes: [],
+    patternsUsed: [],
+    codeStub: "",
+  };
 
   return {
     structural: runStructuralChecks(safeSubmission),
