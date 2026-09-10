@@ -638,7 +638,7 @@ confidence:
 
 ---
 
-# 17. Feedback UX
+# Feedback UX
 
 The feedback screen will contain three visually distinct sections.
 
@@ -676,7 +676,7 @@ Example:
 
 ---
 
-## 🤖 AI Insights
+##  AI Insights
 
 **Contextual**
 
@@ -700,7 +700,7 @@ This transparency is an intentional product decision.
 
 ---
 
-# 18. Attempt History
+# Attempt History
 
 The learner should be able to see previous attempts.
 
@@ -731,66 +731,6 @@ Feedback
 Improve
    ↓
 Try Again
-```
-
----
-
-# 19. Key Design Principles
-
-The MVP follows these principles:
-
-### 1. Simple over over-engineered
-
-A monolith is sufficient.
-
-### 2. Domain clarity over infrastructure complexity
-
-The assignment is primarily an LLD/domain-design exercise.
-
-### 3. AI assists reasoning; it does not become the entire evaluation system
-
-Rules handle objective checks while the LLM handles contextual judgment.
-
-### 4. Multiple valid LLD solutions must be respected
-
-The system should avoid treating one expected implementation as the only correct answer.
-
-### 5. Feedback should be explainable
-
-A learner should understand why something was flagged.
-
-### 6. Failure should degrade gracefully
-
-If AI evaluation fails, other useful feedback should remain available.
-
-### 7. Extensibility should be intentional but practical
-
-New submission formats and evaluation approaches should be possible without redesigning the entire application.
-
----
-
-# 20. Deliberate Simplifications
-
-Because this is a 2-day engineering assignment, the following decisions are intentional:
-
-* No microservices
-* No Kubernetes
-* No distributed job queues
-* No complex state-pattern implementation for attempt status
-* No arbitrary code execution
-* No code compilation infrastructure
-* No sophisticated authentication system
-* No large-scale database optimization
-* No unnecessary infrastructure
-
-The focus remains:
-
-```text
-Good domain design
-        +
-Useful evaluation
-        +
-Clear learner experience
 ```
 
 ---
@@ -839,60 +779,6 @@ Clear learner experience
 
 ---
 
-# 22. Current Project Status
-
-Before implementation:
-
-```text
-✅ Problem understood
-✅ Product direction decided
-✅ MVP scope defined
-✅ Learner journey defined
-✅ Submission format decided
-✅ Domain concepts identified
-✅ Evaluation strategy designed
-✅ Structural vs heuristic distinction defined
-✅ AI evaluation approach defined
-✅ Failure handling defined
-✅ Feedback UX defined
-✅ Extensibility direction defined
-✅ GitHub repository created
-
-⏳ API design
-⏳ MongoDB schema
-⏳ Backend implementation
-⏳ Frontend implementation
-⏳ Claude API integration
-⏳ Tests
-⏳ Research Note
-⏳ Design Note
-⏳ README
-⏳ AI_USAGE.md
-```
-
----
-
-# 23. Next Step
-
-The next design stage is:
-
-```text
-Learner Journey
-      ↓
-API / Route Design
-      ↓
-MongoDB Schema
-      ↓
-Backend Structure
-      ↓
-Frontend Structure
-      ↓
-Evaluation Implementation
-      ↓
-Testing
-      ↓
-Documentation
-```
 
 Implementation should begin only after the API and database responsibilities are clearly understood.
 
