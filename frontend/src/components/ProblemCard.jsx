@@ -32,25 +32,27 @@ export default function ProblemCard({ problem }) {
   }
 
   const key = difficultyKey(difficulty);
-  const cardClass = key ? `problem-card problem-card--${key}` : 'problem-card';
-  const badgeClass = key ? `difficulty difficulty--${key}` : 'difficulty';
+  const cardClass = key ? `problem-card difficulty-${key}` : 'problem-card';
 
   return (
     <article className={cardClass}>
-      <div className="problem-card__header">
-        <h3 className="problem-card__title">{title}</h3>
-        <span className={badgeClass}>{difficultyLabel(difficulty)}</span>
+      <div className="problem-card__spine" />
+      <div className="problem-card__body">
+        <div className="problem-card__heading">
+          <h3 className="problem-card__title">{title}</h3>
+          <span className="problem-card__difficulty">{difficultyLabel(difficulty)}</span>
+        </div>
+
+        {context && <p className="problem-card__excerpt">{context}</p>}
+
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={handleStartPractice}
+        >
+          Start Practice
+        </button>
       </div>
-
-      {context && <p className="problem-card__context">{context}</p>}
-
-      <button
-        type="button"
-        className="problem-card__action"
-        onClick={handleStartPractice}
-      >
-        Start Practice
-      </button>
     </article>
   );
 }
