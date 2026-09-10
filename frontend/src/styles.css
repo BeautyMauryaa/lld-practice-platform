@@ -251,6 +251,31 @@ h3 {
   color: var(--color-ink-muted);
 }
 
+/* ---- Learner name gate ---- */
+
+.learner-gate {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 28px;
+}
+
+.learner-gate__form {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.learner-gate__form input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
 /* ---- Design form ---- */
 
 .design-form h2 {
