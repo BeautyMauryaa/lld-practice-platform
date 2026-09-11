@@ -1,7 +1,6 @@
 
-========================
-No need to understand this - this is useless, just a messs!
-========================
+= No need to understand this - this is useless, just a messs!
+
 
 We have completed the backend through Step 7. Before implementing anything else, understand the remaining roadmap below.
 
