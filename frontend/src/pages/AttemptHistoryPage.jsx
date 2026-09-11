@@ -1,6 +1,7 @@
+// frontend/src/pages/AttemptHistoryPage.jsx
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAttempts, getAttemptById, getProblems } from '../services/api';
+import { getAttempts, getProblems, deleteAttempt } from '../services/api';
 import { getStoredLearnerId } from '../services/learner';
 
 const STATUS_LABELS = {
@@ -20,38 +21,29 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
-// The list endpoint (GET /api/attempts?learnerId=) intentionally returns
-// only id/problemId/status/dates — no problem title, no feedback. This
-// page joins that against GET /api/problems (for titles) and, for
-// evaluated attempts only, a per-attempt GET /api/attempts/:id (for a
-// short feedback summary), rather than asking the backend to change
-// shape. Attempt counts for one learner are small enough for this to be
-// a non-issue at this app's scale.
-async function enrichAttempts(attemptList, problems) {
+function enrichAttempts(attemptList, problems) {
   const problemsById = new Map(problems.map((p) => [p.id, p]));
-
-  return Promise.all(
-    attemptList.map(async (attempt) => {
-      let summary = null;
-      if (attempt.status === 'evaluated') {
-        try {
-          const full = await getAttemptById(attempt.id);
-          summary = full.feedback?.summary || null;
-        } catch {
-          // Non-fatal — the row still renders, just without a summary.
-          summary = null;
-        }
-      }
-      return { ...attempt, problem: problemsById.get(attempt.problemId), summary };
-    })
-  );
+  return attemptList.map((attempt) => ({
+    ...attempt,
+    problem: problemsById.get(attempt.problemId),
+  }));
 }
 
 function AttemptHistoryPage() {
   const [learnerId] = useState(() => getStoredLearnerId());
-  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
+  const [status, setStatus] = useState('loading');
   const [attempts, setAttempts] = useState([]);
   const [error, setError] = useState(null);
+
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+
+  useEffect(() => {
+    document.body.classList.add('theme-problems');
+    return () => {
+      document.body.classList.remove('theme-problems');
+    };
+  }, []);
 
   useEffect(() => {
     if (!learnerId) return;
@@ -60,10 +52,9 @@ function AttemptHistoryPage() {
     setStatus('loading');
 
     Promise.all([getAttempts(learnerId), getProblems()])
-      .then(([attemptList, problems]) => enrichAttempts(attemptList, problems))
-      .then((enriched) => {
+      .then(([attemptList, problems]) => {
         if (cancelled) return;
-        // Most recent first.
+        const enriched = enrichAttempts(attemptList, problems);
         enriched.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setAttempts(enriched);
         setStatus('ready');
@@ -79,12 +70,36 @@ function AttemptHistoryPage() {
     };
   }, [learnerId]);
 
+  const handleDelete = async (attemptId, problemTitle) => {
+    const confirmed = window.confirm(
+      `Delete this attempt${problemTitle ? ` for "${problemTitle}"` : ''}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(attemptId);
+    setDeleteError(null);
+
+    try {
+      await deleteAttempt(attemptId);
+      setAttempts((current) => current.filter((a) => a.id !== attemptId));
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (!learnerId) {
     return (
-      <main className="page">
-        <header className="page__header">
-          <h1>Attempt History</h1>
-        </header>
+      <main className="page cyber-page practice-page-refined">
+        <div className="practice-header-container">
+          <Link to="/" className="back-nav-link">
+            ← Back to Arena
+          </Link>
+          <div className="practice-title-row">
+            <h1>Attempt History</h1>
+          </div>
+        </div>
         <p className="state-message">
           You haven't started any problems yet.{' '}
           <Link to="/">Pick a problem</Link> to create your first attempt.
@@ -94,18 +109,22 @@ function AttemptHistoryPage() {
   }
 
   return (
-    <main className="page">
-      <header className="page__header">
-        <h1>Attempt History</h1>
-        <p className="page__subtitle">Review past attempts, or open one to try that problem again.</p>
-      </header>
+    <main className="page cyber-page practice-page-refined">
+      <div className="practice-header-container">
+        <Link to="/" className="back-nav-link">
+          ← Back to Arena
+        </Link>
+        <div className="practice-title-row">
+          <h1>Attempt History</h1>
+        </div>
+        <p className="workspace-subtitle">Review your past attempts and revisit feedback.</p>
+      </div>
 
       {status === 'loading' && <p className="state-message">Loading your attempts…</p>}
 
       {status === 'error' && (
         <p className="state-message state-message--error">
-          Couldn't load your attempt history: {error}. Check that the backend is running and try
-          refreshing.
+          Couldn't load your attempt history: {error}. Check that the backend is running and try refreshing.
         </p>
       )}
 
@@ -115,11 +134,17 @@ function AttemptHistoryPage() {
         </p>
       )}
 
+      {deleteError && (
+        <p className="state-message state-message--error">
+          Couldn't delete that attempt: {deleteError}.
+        </p>
+      )}
+
       {status === 'ready' && attempts.length > 0 && (
         <ul className="attempt-list">
           {attempts.map((attempt) => (
-            <li key={attempt.id}>
-              <Link to={`/attempts/${attempt.id}`} className="attempt-card">
+            <li key={attempt.id} className="attempt-row">
+              <div className="attempt-card">
                 <div className="attempt-card__heading">
                   <h3 className="attempt-card__title">
                     {attempt.problem?.title || 'Unknown problem'}
@@ -129,11 +154,29 @@ function AttemptHistoryPage() {
                   </span>
                 </div>
                 <p className="attempt-card__dates">
-                  Started {formatDate(attempt.createdAt)}
-                  {attempt.evaluatedAt && <> · Evaluated {formatDate(attempt.evaluatedAt)}</>}
+                  Started: {formatDate(attempt.createdAt)}
+                  {attempt.evaluatedAt && <> · Evaluated: {formatDate(attempt.evaluatedAt)}</>}
                 </p>
-                {attempt.summary && <p className="attempt-card__summary">{attempt.summary}</p>}
-              </Link>
+                {attempt.status === 'evaluated' && (
+                  <div className="attempt-feedback-indicator">
+                    <span className="feedback-badge">Feedback available</span>
+                  </div>
+                )}
+              </div>
+              <div className="attempt-row__actions">
+                <Link to={`/attempts/${attempt.id}`} className="btn btn--secondary btn--small view-attempt-btn">
+                  View Attempt
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn--danger-subtle btn--small attempt-row__delete"
+                  onClick={() => handleDelete(attempt.id, attempt.problem?.title)}
+                  disabled={deletingId === attempt.id}
+                  aria-label={`Delete attempt for ${attempt.problem?.title || 'this problem'}`}
+                >
+                  {deletingId === attempt.id ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

@@ -213,4 +213,26 @@ async function submitAttempt(req, res) {
   }
 }
 
-module.exports = { createAttempt, saveDraft, getAttempt, listAttemptsByLearner, submitAttempt };
+// DELETE /api/attempts/:id
+async function deleteAttempt(req, res) {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ error: 'Invalid attempt ID.' });
+  }
+
+  try {
+    const attempt = await Attempt.findByIdAndDelete(id);
+
+    if (!attempt) {
+      return res.status(404).json({ error: 'Attempt not found.' });
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    console.error('Error deleting attempt:', err.message);
+    res.status(500).json({ error: 'Failed to delete attempt.' });
+  }
+}
+
+module.exports = { createAttempt, saveDraft, getAttempt, listAttemptsByLearner, submitAttempt, deleteAttempt };

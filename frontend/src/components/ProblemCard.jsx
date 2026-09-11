@@ -20,38 +20,50 @@ export default function ProblemCard({ problem }) {
   const navigate = useNavigate();
   const { id, title, difficulty, requirements } = problem;
 
-  // A short, single-line context excerpt rather than the full
-  // requirements list — the full list belongs on the detail/attempt
-  // screen (Step 8B), not the picker card.
   const context = Array.isArray(requirements) && requirements.length > 0
     ? requirements[0]
-    : null;
+    : 'Design core functional modules, class relationships, and handle robust edge cases.';
 
   function handleStartPractice() {
     navigate(`/problems/${id}`, { state: { title } });
   }
 
   const key = difficultyKey(difficulty);
-  const cardClass = key ? `problem-card difficulty-${key}` : 'problem-card';
+  const cardClass = key ? `cyber-card difficulty-${key}` : 'cyber-card';
 
   return (
     <article className={cardClass}>
-      <div className="problem-card__spine" />
-      <div className="problem-card__body">
-        <div className="problem-card__heading">
-          <h3 className="problem-card__title">{title}</h3>
-          <span className="problem-card__difficulty">{difficultyLabel(difficulty)}</span>
+      <div className="cyber-card__glow-bar" />
+      <div className="cyber-card__content">
+        <div className="cyber-card__top">
+          <div className="cyber-card-meta-group">
+            <span className="cyber-id">ID #{id}</span>
+            <span className={`cyber-badge ${key || 'unrated'}`}>
+              {difficultyLabel(difficulty)}
+            </span>
+          </div>
+          <h3 className="cyber-card__title">{title}</h3>
         </div>
 
-        {context && <p className="problem-card__excerpt">{context}</p>}
+        <p className="cyber-card__excerpt">{context}</p>
 
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={handleStartPractice}
-        >
-          Start Practice
-        </button>
+        <div className="cyber-card__footer">
+          <div className="cyber-tags">
+            <span className="c-tag">OOP Patterns</span>
+            <span className="c-tag">Extensibility</span>
+          </div>
+          <button
+            type="button"
+            className="cyber-btn-launch"
+            onClick={handleStartPractice}
+          >
+            <span>Launch Design Studio</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
       </div>
     </article>
   );

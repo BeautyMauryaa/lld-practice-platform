@@ -13,15 +13,20 @@ export default function App() {
   return (
     <>
       <nav className="app-nav">
-        <NavLink to="/" end className={navLinkClass}>
-          Problems
-        </NavLink>
-        <NavLink to="/learn" className={navLinkClass}>
-          Learn LLD
-        </NavLink>
-        <NavLink to="/history" className={navLinkClass}>
-          Attempt History
-        </NavLink>
+        <div className="app-nav__group app-nav__group--left">
+          <NavLink to="/" end className={navLinkClass}>
+            Problems
+          </NavLink>
+          <NavLink to="/history" className={navLinkClass}>
+            Attempt History
+          </NavLink>
+        </div>
+
+        <div className="app-nav__group app-nav__group--right">
+          <NavLink to="/learn" className={navLinkClass}>
+            Learn LLD
+          </NavLink>
+        </div>
       </nav>
 
       <Routes>

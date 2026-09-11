@@ -86,3 +86,11 @@ export function submitAttempt(attemptId) {
     method: 'POST',
   });
 }
+
+// Permanently deletes an attempt. Resolves with null (204 No Content)
+// on success.
+export function deleteAttempt(attemptId) {
+  return request(`/attempts/${attemptId}`, {
+    method: 'DELETE',
+  });
+}

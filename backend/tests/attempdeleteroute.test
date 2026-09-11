@@ -1,0 +1,62 @@
+const express = require('express');
+const request = require('supertest');
+
+jest.mock('../src/models/Attempt', () => ({
+  findByIdAndDelete: jest.fn(),
+}));
+
+const Attempt = require('../src/models/Attempt');
+const attemptRoutes = require('../src/routes/attemptRoutes');
+
+function buildApp() {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/attempts', attemptRoutes);
+  return app;
+}
+
+const VALID_ID = '507f1f77bcf86cd799439011';
+
+describe('DELETE /api/attempts/:id', () => {
+  let app;
+
+  beforeEach(() => {
+    app = buildApp();
+    jest.clearAllMocks();
+  });
+
+  test('malformed ID returns 400 without touching the database', async () => {
+    const res = await request(app).delete('/api/attempts/not-a-real-id');
+
+    expect(res.status).toBe(400);
+    expect(Attempt.findByIdAndDelete).not.toHaveBeenCalled();
+  });
+
+  test('deleting an attempt that does not exist returns 404', async () => {
+    Attempt.findByIdAndDelete.mockResolvedValue(null);
+
+    const res = await request(app).delete(`/api/attempts/${VALID_ID}`);
+
+    expect(res.status).toBe(404);
+    expect(Attempt.findByIdAndDelete).toHaveBeenCalledWith(VALID_ID);
+  });
+
+  test('successfully deleting an attempt returns 204 with no body', async () => {
+    Attempt.findByIdAndDelete.mockResolvedValue({ _id: VALID_ID });
+
+    const res = await request(app).delete(`/api/attempts/${VALID_ID}`);
+
+    expect(res.status).toBe(204);
+    expect(res.body).toEqual({});
+    expect(Attempt.findByIdAndDelete).toHaveBeenCalledWith(VALID_ID);
+  });
+
+  test('a database error returns 500', async () => {
+    Attempt.findByIdAndDelete.mockRejectedValue(new Error('connection lost'));
+
+    const res = await request(app).delete(`/api/attempts/${VALID_ID}`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: 'Failed to delete attempt.' });
+  });
+});

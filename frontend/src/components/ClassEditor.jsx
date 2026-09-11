@@ -1,3 +1,5 @@
+// frontend/src/components/ClassEditor.jsx
+import React from 'react';
 import ListFieldEditor from './ListFieldEditor';
 
 function ClassEditor({ classData, onUpdate, onRemove }) {
@@ -6,12 +8,12 @@ function ClassEditor({ classData, onUpdate, onRemove }) {
       <div className="class-editor__header">
         <input
           type="text"
-          className="class-editor__name"
+          className="cyber-text-input class-editor__name"
           placeholder="Class name (e.g. ParkingLot)"
           value={classData.name}
           onChange={(e) => onUpdate({ ...classData, name: e.target.value })}
         />
-        <button type="button" className="btn btn--danger btn--small" onClick={onRemove}>
+        <button type="button" className="cyber-btn-secondary btn--danger btn--small" onClick={onRemove}>
           Remove Class
         </button>
       </div>

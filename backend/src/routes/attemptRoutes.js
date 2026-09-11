@@ -6,6 +6,7 @@ const {
   getAttempt,
   listAttemptsByLearner,
   submitAttempt,
+  deleteAttempt,
 } = require('../controllers/attemptController');
 
 router.post('/', createAttempt);
@@ -13,5 +14,6 @@ router.get('/', listAttemptsByLearner);
 router.get('/:id', getAttempt);
 router.patch('/:id', saveDraft);
 router.post('/:id/submit', submitAttempt);
+router.delete('/:id', deleteAttempt);
 
 module.exports = router;

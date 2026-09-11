@@ -1,7 +1,5 @@
-// A controlled list of text inputs with add/remove. Used for
-// responsibilities, relationships, and patternsUsed — the same
-// add-a-row/remove-a-row interaction repeats in all three, so this is one
-// small shared piece rather than three near-identical copies.
+// frontend/src/components/ListFieldEditor.jsx
+import React from 'react';
 
 function ListFieldEditor({ items, onChange, placeholder, addLabel, ariaLabel }) {
   const updateItem = (index, value) => {
@@ -23,6 +21,7 @@ function ListFieldEditor({ items, onChange, placeholder, addLabel, ariaLabel }) 
         <div className="list-field__row" key={index}>
           <input
             type="text"
+            className="cyber-text-input list-field__input"
             value={value}
             placeholder={placeholder}
             aria-label={ariaLabel}
@@ -30,7 +29,15 @@ function ListFieldEditor({ items, onChange, placeholder, addLabel, ariaLabel }) 
           />
           <button
             type="button"
-            className="btn btn--icon"
+            className="cyber-btn-secondary cyber-btn-add-row"
+            onClick={addItem}
+            title={addLabel}
+          >
+            {addLabel}
+          </button>
+          <button
+            type="button"
+            className="cyber-btn-secondary btn--danger cyber-btn-remove-row"
             aria-label="Remove"
             onClick={() => removeItem(index)}
           >
@@ -38,9 +45,11 @@ function ListFieldEditor({ items, onChange, placeholder, addLabel, ariaLabel }) 
           </button>
         </div>
       ))}
-      <button type="button" className="btn btn--secondary btn--small" onClick={addItem}>
-        {addLabel}
-      </button>
+      {items.length === 0 && (
+        <button type="button" className="cyber-btn-secondary list-field-add-btn" onClick={addItem}>
+          {addLabel}
+        </button>
+      )}
     </div>
   );
 }
